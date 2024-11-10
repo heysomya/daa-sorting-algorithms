@@ -13,7 +13,8 @@ sys.setrecursionlimit(10**6)
 Implement and compare the following sorting algorithm :
     Mergesort
     Heapsort
-    Quicksort (Regular quick sort* and quick sort using 3 medians)
+    Quicksort (First Element as pivot)
+    Quicksort (Using 3 Medians)
     Insertion sort
     Selection sort
     Bubble sort
@@ -152,7 +153,76 @@ class Sorting:
         return arr
 
     def quickSort2(self, arr):
-        pass
+        def get_median_of_three(arr, low, high):
+            # Get the middle index
+            mid = (low + high) // 2
+            
+            # Get values at low, middle, and high positions
+            a = arr[low]
+            b = arr[mid]
+            c = arr[high]
+            
+            # Find median of three values and return its index
+            if a <= b <= c or c <= b <= a:
+                return mid
+            if b <= a <= c or c <= a <= b:
+                return low
+            return high
+
+        def partition(arr, start, end):
+            # Get the median-of-three index as pivot
+            pivot_idx = get_median_of_three(arr, start, end)
+            
+            # Move pivot to the start position
+            arr[start], arr[pivot_idx] = arr[pivot_idx], arr[start]
+            
+            pivot_element = arr[start]
+            count = 0
+            
+            # Count elements less than pivot
+            for i in range(start, end + 1):
+                if arr[i] < pivot_element:
+                    count += 1
+            
+            # Place pivot in its final position
+            pivot_idx = start + count
+            arr[start], arr[pivot_idx] = arr[pivot_idx], arr[start]
+            
+            # Partition around pivot
+            left = start
+            right = end
+            
+            while left < right:
+                # Move left pointer until we find element >= pivot
+                while left < pivot_idx and arr[left] < pivot_element:
+                    left += 1
+                
+                # Move right pointer until we find element < pivot
+                while right > pivot_idx and arr[right] >= pivot_element:
+                    right -= 1
+                
+                # Swap elements if pointers haven't crossed
+                if left < right:
+                    arr[left], arr[right] = arr[right], arr[left]
+                    left += 1
+                    right -= 1
+            
+            return pivot_idx
+
+        def quickSortHelper(arr, start, end):
+            if start < end:
+                # Get partition index
+                pivot_idx = partition(arr, start, end)
+                
+                # Recursively sort left and right partitions
+                quickSortHelper(arr, start, pivot_idx - 1)
+                quickSortHelper(arr, pivot_idx + 1, end)
+
+        # Driver code            
+        start = 0
+        end = len(arr) - 1
+        quickSortHelper(arr, start, end)
+        return arr
 
     def insertionSort(self, arr):
         n = len(arr)
@@ -237,7 +307,7 @@ def sort():
             time_taken = sorting.time_function(sorting.quickSort1, deepcopy(arr))
             times.append({"algorithm": "Quick Sort", "time_taken": time_taken})
         elif algorithm == "quick2":
-            time_taken = sorting.time_function(sorting.quickSort1, deepcopy(arr))
+            time_taken = sorting.time_function(sorting.quickSort2, deepcopy(arr))
             times.append({"algorithm": "QS (3 Medians)", "time_taken": time_taken})
         elif algorithm == "insertion":
             time_taken = sorting.time_function(sorting.insertionSort, deepcopy(arr))
