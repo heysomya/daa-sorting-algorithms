@@ -235,7 +235,10 @@ def sort():
             times.append({"algorithm": "Heap Sort", "time_taken": time_taken})
         elif algorithm == "quick1":
             time_taken = sorting.time_function(sorting.quickSort1, deepcopy(arr))
-            times.append({"algorithm": "Quick Sort 1", "time_taken": time_taken})
+            times.append({"algorithm": "Quick Sort", "time_taken": time_taken})
+        elif algorithm == "quick2":
+            time_taken = sorting.time_function(sorting.quickSort1, deepcopy(arr))
+            times.append({"algorithm": "QS (3 Medians)", "time_taken": time_taken})
         elif algorithm == "insertion":
             time_taken = sorting.time_function(sorting.insertionSort, deepcopy(arr))
             times.append({"algorithm": "Insertion Sort", "time_taken": time_taken})

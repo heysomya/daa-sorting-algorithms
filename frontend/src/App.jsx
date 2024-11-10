@@ -1,81 +1,182 @@
-import { useState } from 'react'
-
+import { useState } from 'react';
 import axios from 'axios';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 
 function App() {
-  const [timeTaken, setTimeTaken] = useState([])
+  const [timeTaken, setTimeTaken] = useState([]);
+  const [error, setError] = useState("");
+  const [selectedAlgorithms, setSelectedAlgorithms] = useState([]);
+  const allowedAlgorithms = [
+    { label: "Merge Sort", value: "merge" },
+    { label: "Heap Sort", value: "heap" },
+    { label: "Quick Sort", value: "quick1" },
+    { label: "QS (3 Medians)", value: "quick2" },
+    { label: "Insertion Sort", value: "insertion" },
+    { label: "Selection Sort", value: "selection" },
+    { label: "Bubble Sort", value: "bubble" }
+  ];
+
+  const toggleAlgorithmSelection = (algorithm) => {
+    setSelectedAlgorithms((prevSelected) =>
+      prevSelected.includes(algorithm)
+        ? prevSelected.filter((item) => item !== algorithm)
+        : [...prevSelected, algorithm]
+    );
+  };
 
   const handleSelections = async (event) => {
     event.preventDefault();
-    const form = event.target.form;
-    const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
-    const selectedValues = Array.from(checkboxes).map(checkbox => checkbox.value);
+    const inputSize = event.target.form.querySelector('input[type="number"]').value;
 
-    const allowedAlgorithms = ["merge", "heap", "quick1", "quick2", "insertion", "selection", "bubble"];
+    // Clear previous error
+    setError("");
 
-    const inputSize = form.querySelector('input[type="number"]').value;
+    // Validate input size
     if (!inputSize || Number(inputSize) <= 0) {
-      alert("Please enter a valid input size greater than zero.");
+      setError("Please enter a valid input size greater than zero.");
       return;
     }
 
-    const isValidAlgorithm = selectedValues.every(algo => allowedAlgorithms.includes(algo));
-    if (!isValidAlgorithm) {
-      alert("One or more selected algorithms are invalid.");
-      return;
-    }
-
-    if (selectedValues.length < 2) {
-      alert("Please select at least two algorithms.");
+    // Ensure at least two algorithms are selected
+    if (selectedAlgorithms.length < 2) {
+      setError("Please select at least two algorithms.");
       return;
     }
 
     try {
       const res = await axios.post('http://127.0.0.1:5000/sort', {
-        algorithms: selectedValues,
+        algorithms: selectedAlgorithms,
         size: inputSize
       });
-      setTimeTaken(res.data.times);
+      const newTimes = allowedAlgorithms.map(algo => {
+        const algoTime = res.data.times.find(time => time.algorithm === algo.label);
+        return { algorithm: algo.label, time_taken: algoTime ? algoTime.time_taken : 0 };
+      });
+
+      setTimeTaken(newTimes);
     } catch (error) {
       console.error(error);
+      setError("An error occurred while fetching data. Please try again later.");
     }
-  }
+  };
+
+  const chartData = {
+    labels: timeTaken.map(item => item.algorithm),
+    datasets: [
+      {
+        label: 'Time Taken (ms)',
+        data: timeTaken.map(item => item.time_taken),
+        backgroundColor: '#fb7185',
+        borderColor: '#fb7185',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainaspectratio: false,
+    plugins: {
+      legend: { position: 'top' },
+      title: {
+        display: true, text: 'Sorting Algorithm Runtime Comparison', color: '#fb7185', font: {
+          size: 20,
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#fb7185',  // Change x-axis labels color here
+            font: {
+              size: 14, // Adjust x-axis label font size
+            }
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#fb7185',  // Change y-axis labels color here
+            font: {
+              size: 14, // Adjust y-axis label font size
+            }
+          }
+        },
+      }
+    }
+  };
 
   return (
-    <div className=''>
-      <div>
-        <p className='text-9xl font-black'>Sorting Algorithms</p>
+    <div className='max-w-4xl mx-auto p-4'>
+      <div className="text-5xl sm:text-5xl md:text-7xl lg:text-9xl font-bold text-left text-gray-200 ">
+        <p>Sorting</p>
+        <p>Algorithms</p>
       </div>
 
       <div>
-        <form action="" className='py-5'>
-          <p className='text-xl font-extrabold'>Enter Input Size:</p>
-          <input type='number' min={1} className='mt-2' />
-          <p className='text-xl font-extrabold pt-5'>Choose 2 or more sorting algorithms to compare the time taken to sort the array:</p>
-          <div className='mt-2'><label><input type="checkbox" value="merge" className='accent-violet-400' /> Merge Sort</label></div>
-          <div><label><input type="checkbox" value="heap" /> Heap Sort</label></div>
-          <div><label><input type="checkbox" value="quick1" /> Quick Sort 1</label></div>
-          <div><label><input type="checkbox" value="quick2" /> Quick Sort 2</label></div>
-          <div><label><input type="checkbox" value="insertion" /> Insertion Sort</label></div>
-          <div><label><input type="checkbox" value="selection" /> Selection Sort</label></div>
-          <div><label><input type="checkbox" value="bubble" /> Bubble Sort</label></div>
-          <button type="submit" onClick={handleSelections} className='bg-violet-400 mt-2 px-4 py-2 rounded-md hover:bg-violet-700 duration-500'>Submit</button>
+        <form action="">
+          <h4 className='mt-10 text-lg sm:text-xl text-white'>Enter Input Size:</h4>
+          <input type="number" className="p-2 mb-4 w-full sm:w-auto rounded-sm text-rose-500" />
+
+          <h4 className='mt-5 text-lg sm:text-xl text-white'>Select 2 or more sorting algorithms:</h4>
+          <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+            {allowedAlgorithms.map((algo) => (
+              <div
+                key={algo.value}
+                onClick={() => toggleAlgorithmSelection(algo.value)}
+                className={`p-4 rounded-xl cursor-pointer duration-200 ${selectedAlgorithms.includes(algo.value) ? "border-4 border-rose-500 bg-gray-200 text-gray-700" : "border-4 border-gray-200 hover:border-rose-300 bg-gray-200 text-gray-700"
+                  }`}
+              >
+                {algo.label}
+              </div>
+            ))}
+          </div>
+
+          <button type="submit" onClick={handleSelections} className="mt-4 px-4 py-2 bg-rose-400 text-white rounded hover:bg-rose-500">
+            Submit
+          </button>
         </form>
+
+        {error && <p className="mt-2 font-bold text-white">{error}</p>}
       </div>
 
-      <div>
-        <p>Time taken by Algorithms:</p>
-        {timeTaken.map((item, index) => {
-          return (
-            <div key={index}>
-              <p><b>{item.algorithm}</b>: {item.time_taken} ms</p>
+      {!error && (
+        <div className='w-full mt-10 text-white'>
+          <h4 className='mt-10 text-lg sm:text-xl text-rose-400'>Time taken by Algorithms:</h4>
+          {timeTaken.filter(item => item.time_taken > 0).length > 0 ? (
+            <table className="min-w-full table-auto border-collapse">
+              <thead>
+                <tr>
+                  <th className="border px-4 py-2 text-left">Algorithm</th>
+                  <th className="border px-4 py-2 text-left">Time Taken (ms)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {timeTaken
+                  .filter(item => item.time_taken > 0)
+                  .map((item, index) => (
+                    <tr key={index}>
+                      <td className="border px-4 py-2">{item.algorithm}</td>
+                      <td className="border px-4 py-2">{item.time_taken} ms</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No valid algorithms selected or all have 0ms.</p>
+          )}
+          {timeTaken.length > 0 && (
+            <div className="w-full h-screen mt-10">
+              <Bar data={chartData} options={chartOptions} />
             </div>
-          )
-        })}
-      </div>
+          )}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
