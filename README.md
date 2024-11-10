@@ -27,6 +27,10 @@ cd daa-sorting-algorithms
     ```sh
     source myenv/bin/activate
     ```
+5. Install the following packages:
+    ```sh
+    pip3 install flask flask-cors
+    ```
 5. Run the application:
     ```sh
     python3 app.py
